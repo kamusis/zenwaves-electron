@@ -212,6 +212,7 @@ onUnmounted(() => {
             class="auto-delete-checkbox"
           >
           Auto Clean
+          <span class="tooltip-icon" data-tooltip="Clean up temporary files after setting wallpaper">?</span>
         </label>
       </div>
       <div class="select-group">
@@ -232,9 +233,15 @@ onUnmounted(() => {
           <select
             :value="wallpaperParams.fontFamily"
             @change="e => changeMethods.onChangeFont((e.target as HTMLSelectElement).value)"
-            class="interval-select"
+            class="font-select"
+            :style="{ fontFamily: wallpaperParams.fontFamily }"
           >
-            <option v-for="option in FONT_OPTIONS" :key="option.value" :value="option.value">
+            <option 
+              v-for="option in FONT_OPTIONS" 
+              :key="option.value" 
+              :value="option.value"
+              :style="{ fontFamily: option.value }"
+            >
               {{ option.label }}
             </option>
           </select>
@@ -342,25 +349,54 @@ onUnmounted(() => {
   box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
 }
 
+.font-select {
+  min-width: 140px;
+  padding: 8px 12px;
+  font-size: 16px;
+  line-height: 1.5;
+  background-color: #363636;
+  border: 1px solid #4a4a4a;
+  border-radius: 4px;
+  color: #fff;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.font-select:hover {
+  border-color: #666;
+}
+
+.font-select option {
+  padding: 8px;
+  font-size: 16px;
+  line-height: 1.5;
+  background-color: #363636;
+}
+
+.font-select option:hover {
+  background-color: #4a4a4a;
+}
+
 .auto-delete-label {
   display: flex;
   align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  background-color: #363636;
+  position: relative;
   color: #e0e0e0;
   cursor: pointer;
-  padding: 8px 12px;
   user-select: none;
   font-size: 14px;
-  background-color: #424242;
-  border-radius: 6px;
   transition: all 0.2s ease;
 }
 
 .auto-delete-label:hover {
-  background-color: #484848;
+  background-color: #424242;
 }
 
 .auto-delete-checkbox {
-  margin-right: 8px;
   cursor: pointer;
   width: 16px;
   height: 16px;
@@ -391,6 +427,58 @@ onUnmounted(() => {
 
 .auto-delete-checkbox:hover {
   border-color: #357abd;
+}
+
+.tooltip-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #4a4a4a;
+  color: #fff;
+  font-size: 12px;
+  cursor: help;
+  position: relative;
+}
+
+.tooltip-icon::before {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  padding: 8px 12px;
+  background: #2a2a2a;
+  color: #fff;
+  font-size: 12px;
+  white-space: nowrap;
+  border-radius: 4px;
+  visibility: hidden;
+  opacity: 0;
+  transition: all 0.2s ease;
+  pointer-events: none;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+}
+
+.tooltip-icon::after {
+  content: '';
+  position: absolute;
+  top: calc(100% + 3px);
+  left: 10px;
+  border: 5px solid transparent;
+  border-bottom-color: #2a2a2a;
+  visibility: hidden;
+  opacity: 0;
+  transition: all 0.2s ease;
+  pointer-events: none;
+}
+
+.tooltip-icon:hover::before,
+.tooltip-icon:hover::after {
+  visibility: visible;
+  opacity: 1;
 }
 
 .preview {
