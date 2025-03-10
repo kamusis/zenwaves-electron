@@ -1,7 +1,9 @@
 {
   "name": "zenwaves-electron",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
+  "description": "Transform your desktop into a tranquil realm where flowing waves dance with timeless Chinese poetry. A digital zen garden that brings ancient wisdom and modern aesthetics together, offering moments of peace in your daily digital life",
+  "author": "Zen Waves Team",
   "type": "module",
   "main": "./main/main.js",
   "exports": "./main/main.js",
@@ -10,10 +12,10 @@
     "build": "vite build",
     "preview": "vite preview",
     "electron": "electron .",
-    "start": "concurrently \"npm:dev\" \"wait-on http://localhost:5173 && electron .\""
+    "start": "concurrently \"npm:dev\" \"wait-on http://localhost:5173 && electron .\"",
+    "package": "vite build && electron-builder"
   },
   "dependencies": {
-    "electron": "^35.0.0",
     "electron-store": "^10.0.1",
     "lodash-es": "^4.17.21",
     "p5": "^1.11.3",
@@ -21,9 +23,43 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.1",
+    "ajv-formats": "^3.0.1",
     "concurrently": "^9.1.2",
+    "electron": "^35.0.0",
+    "electron-builder": "^25.1.8",
     "vite": "^6.2.1",
     "vite-plugin-electron": "^0.29.0",
     "wait-on": "^8.0.2"
+  },
+  "build": {
+    "appId": "com.zenwaves.app",
+    "productName": "Zen Waves",
+    "copyright": "Copyright 2025, Zen Waves Team",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/**/*",
+      "main/**/*"
+    ],
+    "asar": false,
+    "mac": {
+      "category": "public.app-category.lifestyle",
+      "icon": "public/images/logo.png",
+      "target": [
+        "dmg"
+      ]
+    },
+    "win": {
+      "icon": "public/images/logo.png",
+      "target": [
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    }
   }
 }

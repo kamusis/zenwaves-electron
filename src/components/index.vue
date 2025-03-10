@@ -158,7 +158,7 @@ async function setWallpaper() {
       throw new Error('设置壁纸失败')
     }
 
-    console.log('壁纸设置成功')
+    //console.log('壁纸设置成功')
   } catch (error) {
     console.error('设置壁纸失败:', error)
     throw error
