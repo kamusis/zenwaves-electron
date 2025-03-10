@@ -46,7 +46,8 @@ if (!store.has('wallpaperParams')) {
     waveColor: '',
     isDarkMode: true,
     changeInterval: 60,
-    fontFamily: 'JXZhuoKai'
+    fontFamily: 'JXZhuoKai',
+    autoDeleteWallpaper: true,
   });
 }
 
@@ -221,14 +222,23 @@ ipcMain.handle('setWallpaper', async (event, imagePath) => {
           logger.warn('stderr (NO ERROR):', stderr);
         }
         
-        // Delete temporary file after setting wallpaper
-        try {
-          await deleteTempFile(imagePath);
-          resolve(true);
-        } catch (deleteError) {
-          logger.warn('Failed to delete temporary file, but wallpaper was set successfully');
-          resolve(true); // Still resolve as success since wallpaper was set
+        // Check if auto delete is enabled
+        const autoDelete = getWallpaperParam('autoDeleteWallpaper');
+        logger.log('Auto delete wallpaper files:', autoDelete);
+        
+        if (autoDelete) {
+          // Delete wallpaper file after setting
+          try {
+            await deleteTempFile(imagePath);
+            logger.log('Wallpaper file deleted after setting');
+          } catch (deleteError) {
+            logger.warn('Failed to delete wallpaper file, but wallpaper was set successfully');
+          }
+        } else {
+          logger.log('Keeping wallpaper file as auto-delete is disabled');
         }
+        
+        resolve(true);
       }
     });
   });

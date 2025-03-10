@@ -1,9 +1,9 @@
 // 自动更换壁纸间隔
 export const INTERVAL_OPTIONS = [
-  { label: '不开启', value: 0 },
-  { label: '每小时', value: 60 },
-  { label: '每天', value: 1440 },
-  { label: '每月', value: 43200 },
+  { label: 'Disable', value: 0 },
+  { label: 'Every hour', value: 60 },
+  { label: 'Every day', value: 1440 },
+  { label: 'Every month', value: 43200 },
 ]
 
 // 可用字体选项

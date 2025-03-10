@@ -18,7 +18,8 @@ const wallpaperParams = reactive({
   waveColor: '',
   isDarkMode: true,
   changeInterval: 60,
-  fontFamily: 'JXZhuoKai'
+  fontFamily: 'JXZhuoKai',
+  autoDeleteWallpaper: true,
 });
 
 // 初始化存储值
@@ -200,14 +201,22 @@ onUnmounted(() => {
   <div class="wallpaper">
     <div class="settings">
       <div class="button-group">
-        <button class="set-button refresh-button" @click="wallpaperMethods.fetchPoem">诗词切换</button>
-        <button class="set-button refresh-button" @click="changeMethods.onChangeWavecolor">颜色切换</button>
-        <button class="set-button" @click="changeMethods.onChangeTheme">{{ wallpaperParams.isDarkMode ? '更换浅色背景' : '更换深色背景' }}</button>
-        <button class="set-button" @click="setWallpaper">设置为电脑壁纸</button>
+        <button class="set-button refresh-button" @click="wallpaperMethods.fetchPoem">Verse</button>
+        <button class="set-button refresh-button" @click="changeMethods.onChangeWavecolor">Ripple</button>
+        <button class="set-button" @click="changeMethods.onChangeTheme">{{ wallpaperParams.isDarkMode ? 'Dawn' : 'Dusk' }}</button>
+        <button class="set-button" @click="setWallpaper">Apply</button>
+        <label class="auto-delete-label">
+          <input
+            type="checkbox"
+            v-model="wallpaperParams.autoDeleteWallpaper"
+            class="auto-delete-checkbox"
+          >
+          Auto Clean
+        </label>
       </div>
       <div class="select-group">
         <div class="interval-setting">
-          自动更换壁纸间隔：
+          Auto Change
           <select
             :value="wallpaperParams.changeInterval"
             @change="e => changeMethods.onChangeInterval(Number((e.target as HTMLSelectElement).value))"
@@ -219,7 +228,7 @@ onUnmounted(() => {
           </select>
         </div>
         <div class="interval-setting">
-          壁纸字体：
+          Font Style
           <select
             :value="wallpaperParams.fontFamily"
             @change="e => changeMethods.onChangeFont((e.target as HTMLSelectElement).value)"
@@ -244,22 +253,28 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   padding: 10px 20px 20px;
+  background-color: #2a2a2a;
 }
 
 .settings {
   display: flex;
   margin-bottom: 14px;
   justify-content: space-between;
+  background-color: #363636;
+  padding: 12px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .button-group {
   display: flex;
-  gap: 10px;
+  gap: 12px;
+  align-items: center;
 }
 
 .select-group {
   display: flex;
-  gap: 15px;
+  gap: 20px;
   align-items: center;
 }
 
@@ -267,29 +282,115 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   white-space: nowrap;
+  color: #e0e0e0;
+  font-size: 14px;
 }
 
 .set-button {
   padding: 8px 16px;
   border: none;
-  border-radius: 4px;
-  background-color: #4a4a4a;
+  border-radius: 6px;
+  background-color: #4a90e2;
   color: white;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .set-button:hover {
-  background-color: #666;
+  background-color: #357abd;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.set-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.refresh-button {
+  background-color: #42b983;
+}
+
+.refresh-button:hover {
+  background-color: #3aa876;
 }
 
 .interval-select {
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background-color: #4a4a4a;
+  padding: 8px 12px;
+  border: 1px solid #4a4a4a;
+  border-radius: 6px;
+  background-color: #424242;
   color: white;
   cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  margin-left: 8px;
+  min-width: 120px;
+}
+
+.interval-select:hover {
+  border-color: #4a90e2;
+  background-color: #484848;
+}
+
+.interval-select:focus {
+  outline: none;
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
+
+.auto-delete-label {
+  display: flex;
+  align-items: center;
+  color: #e0e0e0;
+  cursor: pointer;
+  padding: 8px 12px;
+  user-select: none;
+  font-size: 14px;
+  background-color: #424242;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.auto-delete-label:hover {
+  background-color: #484848;
+}
+
+.auto-delete-checkbox {
+  margin-right: 8px;
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 2px solid #4a90e2;
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  background-color: #363636;
+  transition: all 0.2s ease;
+}
+
+.auto-delete-checkbox:checked {
+  background-color: #4a90e2;
+}
+
+.auto-delete-checkbox:checked::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 4px;
+  height: 8px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.auto-delete-checkbox:hover {
+  border-color: #357abd;
 }
 
 .preview {
@@ -298,10 +399,11 @@ onUnmounted(() => {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  border-radius: 8px;
+  border-radius: 12px;
   color: white;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .waves-container {
