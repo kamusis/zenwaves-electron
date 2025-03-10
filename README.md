@@ -1,14 +1,17 @@
 # Zen Waves
 
-A dynamic wallpaper application that combines wave animations with Chinese poetry, creating a zen-like desktop experience.
+A dynamic wallpaper application that combines wave animations with Chinese poetry, creating a zen-like desktop wallpaper experience.
 
-[中文说明](#chinese-readme)
+## Project Attribution
+
+This project is a standalone Electron application evolved from [utools-wallpaper](https://github.com/junruchen/utools-wallpaper), initially forked and modified by [kamusis](https://github.com/kamusis/utools-wallpaper). While the original was a uTools extension, Zen Waves has been completely rebuilt as an independent desktop application using Electron, introducing new features and improvements for a more immersive desktop experience.
 
 ## Features
 
 - 🌊 Dynamic wave animation with P5.js
 - 📝 Integration with Chinese poetry API
 - 🎨 Customizable wave colors and themes
+- ✍️ Customizable font
 - 🕒 Automatic wallpaper changes at set intervals
 - 🖥️ Cross-platform support (Windows, macOS, Linux)
 - 🌓 Light/Dark mode support
@@ -92,9 +95,10 @@ Zen Waves 是一款将动态波浪动画与中国诗词相结合的壁纸应用�
 ### 主要特性
 
 - 🌊 基于 P5.js 的动态波浪动画
-- 📝 集成中国诗词 API
+- 📝 集成今日诗词 API
 - 🎨 可自定义波浪颜色和主题
 - 🕒 支持定时自动更换壁纸
+- ✍️ 可更换字体
 - 🖥️ 跨平台支持（Windows、macOS、Linux）
 - 🌓 支持浅色/深色主题
 
