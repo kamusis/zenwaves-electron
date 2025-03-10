@@ -6,14 +6,41 @@ import fs from 'node:fs';
 import os from 'node:os';
 import { exec } from 'node:child_process';
 
-// 获取 __dirname 等价物
+// Logger utility
+const logger = {
+  get isDevelopment() {
+    return !app.isPackaged;
+  },
+  
+  log(message, ...args) {
+    if (this.isDevelopment) {
+      console.log(`[DEBUG] ${message}`, ...args);
+    }
+  },
+  
+  warn(message, ...args) {
+    if (this.isDevelopment) {
+      console.warn(`[DEBUG] ${message}`, ...args);
+    }
+  },
+  
+  error(message, ...args) {
+    // Always log errors, even in production
+    console.error(`[ERROR] ${message}`, ...args);
+  }
+};
+
+// Log current environment
+logger.log('Environment:', logger.isDevelopment ? 'Development' : 'Production');
+
+// Get __dirname equivalent
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// 初始化 electron-store
+// Initialize electron-store
 const store = new Store();
 
-// 初始化默认参数
+// Initialize default parameters
 if (!store.has('wallpaperParams')) {
   store.set('wallpaperParams', {
     waveColor: '',
@@ -23,52 +50,79 @@ if (!store.has('wallpaperParams')) {
   });
 }
 
-// 辅助函数：获取 wallpaperParams 中的单个属性
+// Helper function: Get wallpaperParams property
 function getWallpaperParam(paramName) {
   const params = store.get('wallpaperParams');
-  return params ? params[paramName] : undefined;
+  if (!params) {
+    logger.warn('wallpaperParams not found in store');
+    return undefined;
+  }
+  const value = params[paramName];
+  logger.log(`Getting wallpaperParam ${paramName}: ${value}`);
+  return value;
 }
 
-// 辅助函数：设置 wallpaperParams 中的单个属性
+// Helper function: Set wallpaperParams property
 function setWallpaperParam(paramName, value) {
   const params = store.get('wallpaperParams');
-  if (params) {
-    params[paramName] = value;
-    store.set('wallpaperParams', params);
-    return true;
+  if (!params) {
+    logger.error('wallpaperParams not found in store');
+    return false;
   }
-  return false;
+  params[paramName] = value;
+  store.set('wallpaperParams', params);
+  logger.log(`Set wallpaperParam ${paramName} to: ${value}`);
+  return true;
+}
+
+// Delete file utility
+async function deleteTempFile(filePath) {
+  try {
+    // Verify the file is in our wallpapers directory
+    const userDataPath = app.getPath('userData');
+    const wallpapersDir = path.join(userDataPath, 'wallpapers');
+    
+    if (!filePath.startsWith(wallpapersDir)) {
+      logger.warn('Attempted to delete file outside wallpapers directory:', filePath);
+      return false;
+    }
+
+    await fs.promises.unlink(filePath);
+    logger.log('Wallpaper file deleted successfully:', filePath);
+    return true;
+  } catch (error) {
+    logger.error('Failed to delete wallpaper file:', error);
+    throw error;
+  }
 }
 
 function createWindow() {
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
+    minWidth: 1100,  // Set minimum window size
+    minHeight: 700,
+    useContentSize: true,  // Use content size instead of window size
     icon: path.join(__dirname, '../public/images/logo.png'),
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'), // 指定 preload 脚本
-      nodeIntegration: false, // 开启 Node 集成
-      contextIsolation: true, // 启用上下文隔离
+      preload: path.join(__dirname, 'preload.js'), // Specify preload script
+      nodeIntegration: false, // Enable Node integration
+      contextIsolation: true, // Enable context isolation
     },
   });
 
   if (app.isPackaged) {
-    win.loadFile(path.join(__dirname, '../dist/index.html')); // 生产模式
+    win.loadFile(path.join(__dirname, '../dist/index.html')); // Production mode
   } else {
-    win.loadURL('http://localhost:5173'); // 开发模式
-    win.webContents.openDevTools(); // 自动打开开发者工具
+    win.loadURL('http://localhost:5173'); // Development mode
+    win.webContents.openDevTools(); // Automatically open developer tools
   }
 }
 
-// 处理 ping 请求
-ipcMain.handle('ping', async () => {
-  return 'Pong from main!';
-});
-
-// 处理 getStore 请求
+// Store operations
 ipcMain.handle('getStore', async (event, key) => {
   if (key.includes('.')) {
-    // 处理单个属性获取，例如 'wallpaperParams.waveColor'
+    // Handle single property access, e.g., 'wallpaperParams.waveColor'
     const [objKey, paramName] = key.split('.');
     if (objKey === 'wallpaperParams') {
       return getWallpaperParam(paramName);
@@ -77,10 +131,9 @@ ipcMain.handle('getStore', async (event, key) => {
   return store.get(key);
 });
 
-// 处理 setStore 请求
 ipcMain.handle('setStore', async (event, key, value) => {
   if (key.includes('.')) {
-    // 处理单个属性设置，例如 'wallpaperParams.waveColor'
+    // Handle single property setting, e.g., 'wallpaperParams.waveColor'
     const [objKey, paramName] = key.split('.');
     if (objKey === 'wallpaperParams') {
       return setWallpaperParam(paramName, value);
@@ -90,60 +143,44 @@ ipcMain.handle('setStore', async (event, key, value) => {
   return true;
 });
 
-// 处理文本写入到下载目录
-ipcMain.handle('writeTextFile', async (event, text) => {
-  const downloadsPath = path.join(os.homedir(), 'Downloads');
-  const filePath = path.join(downloadsPath, Date.now().toString() + '.txt');
-  fs.writeFileSync(filePath, text, { encoding: 'utf-8' });
-  return filePath;
+// Test handler
+ipcMain.handle('ping', () => {
+  return 'Pong from main!';
 });
 
-// 处理图片写入到下载目录
+// Write image file for wallpaper
 ipcMain.handle('writeImageFile', async (event, base64Url) => {
-  const matchs = /^data:image\/([a-z]{1,20});base64,/i.exec(base64Url);
-  if (!matchs) return null;
-  
-  const downloadsPath = path.join(os.homedir(), 'Downloads');
-  const filePath = path.join(downloadsPath, Date.now().toString() + '.' + matchs[1]);
-  fs.writeFileSync(filePath, base64Url.substring(matchs[0].length), { encoding: 'base64' });
-  return filePath;
+  try {
+    // Get user data directory path
+    const userDataPath = app.getPath('userData');
+    logger.log('User data directory:', userDataPath);
+
+    // Create wallpapers directory if it doesn't exist
+    const wallpapersDir = path.join(userDataPath, 'wallpapers');
+    await fs.promises.mkdir(wallpapersDir, { recursive: true });
+
+    // Generate unique filename
+    const timestamp = Date.now();
+    const imagePath = path.join(wallpapersDir, `wallpaper_${timestamp}.png`);
+
+    // Remove the data URL prefix and convert to buffer
+    const base64Data = base64Url.replace(/^data:image\/\w+;base64,/, '');
+    const imageBuffer = Buffer.from(base64Data, 'base64');
+
+    // Write the file
+    await fs.promises.writeFile(imagePath, imageBuffer);
+    logger.log('Wallpaper saved to:', imagePath);
+    return imagePath;
+  } catch (error) {
+    logger.error('Failed to write image file:', error);
+    throw error;
+  }
 });
 
-// 处理删除文件
-ipcMain.handle('deleteFile', async (event, filePath) => {
-  return new Promise((resolve, reject) => {
-    // 检查文件是否存在
-    fs.access(filePath, fs.constants.F_OK, (err) => {
-      if (err) {
-        // 文件不存在，直接返回成功
-        resolve(true);
-        return;
-      }
-
-      // 检查文件权限
-      fs.access(filePath, fs.constants.W_OK, (err) => {
-        if (err) {
-          reject(new Error('没有文件删除权限'));
-          return;
-        }
-
-        // 删除文件
-        fs.unlink(filePath, (error) => {
-          if (error) {
-            reject(new Error(`删除文件失败: ${error.message}`));
-          } else {
-            resolve(true);
-          }
-        });
-      });
-    });
-  });
-});
-
-// 处理设置壁纸
+// Set wallpaper
 ipcMain.handle('setWallpaper', async (event, imagePath) => {
   const platform = os.platform();
-  console.log('[DEBUG] Get platform type:', platform);
+  logger.log('Get platform type:', platform);
   
   return new Promise((resolve, reject) => {
     let command;
@@ -174,22 +211,30 @@ ipcMain.handle('setWallpaper', async (event, imagePath) => {
       return;
     }
     
-    exec(command, (error, stdout, stderr) => {
+    exec(command, async (error, stdout, stderr) => {
       if (error) {
-        console.error('[DEBUG] Execute command failed:', error);
-        console.error('[DEBUG] stderr:', stderr);
+        logger.error('Execute command failed:', error);
+        logger.error('stderr:', stderr);
         reject(new Error(`Set wallpaper failed: ${error.message}`));
       } else {
         if (stderr) {
-          console.warn('[DEBUG] stderr (NO ERROR):', stderr);
+          logger.warn('stderr (NO ERROR):', stderr);
         }
-        resolve(true);
+        
+        // Delete temporary file after setting wallpaper
+        try {
+          await deleteTempFile(imagePath);
+          resolve(true);
+        } catch (deleteError) {
+          logger.warn('Failed to delete temporary file, but wallpaper was set successfully');
+          resolve(true); // Still resolve as success since wallpaper was set
+        }
       }
     });
   });
 });
 
-// 打开窗口
+// Open the main window
 app.whenReady().then(() => {
   createWindow();
   setTimeout(() => {
