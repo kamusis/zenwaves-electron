@@ -201,9 +201,30 @@ ipcMain.handle('setWallpaper', async (event, imagePath) => {
       command = `osascript -e 'tell application "System Events" to tell every desktop to set picture to "${imagePath}"'`;
     } else if (platform === 'win32') {
       // Windows
-      // Get the absolute path of the setWallpaper.cs script file
-      const scriptPath = path.join(__dirname, '../public/scripts/setWallpaper.cs');
-      // Using setWallpaper.cs script to set desktop wallpaper on Windows systems
+      // Choose the correct script path based on whether the app is packaged
+      let scriptPath;
+      if (app.isPackaged) {
+        // Production environment path
+        scriptPath = path.join(process.resourcesPath, 'app', 'dist', 'scripts', 'setWallpaper.cs');
+        // If the above path is incorrect, try alternative paths
+        if (!fs.existsSync(scriptPath)) {
+          scriptPath = path.join(app.getAppPath(), 'scripts', 'setWallpaper.cs');
+        }
+      } else {
+        // Development environment path
+        scriptPath = path.join(__dirname, '../public/scripts/setWallpaper.cs');
+      }
+      
+      // Check if the script file exists
+      if (!fs.existsSync(scriptPath)) {
+        logger.error('setWallpaper.cs script file does not exist:', scriptPath);
+        reject(new Error(`Wallpaper setting script not found: ${scriptPath}`));
+        return;
+      }
+      
+      logger.log('Using script path:', scriptPath);
+      
+      // Use setWallpaper.cs script to set desktop wallpaper
       command = `powershell -ExecutionPolicy Bypass -NoProfile -Command "Add-Type -Path '${scriptPath}'; [Wallpaper.Setter]::SetWallpaper('${imagePath}')"`;
     } else if (platform === 'linux') {
       // Linux 
