@@ -116,6 +116,29 @@ const changeMethods = {
   }
 }
 
+// 通知函数
+function showNotification(message, type = 'info') {
+  // 显示界面内通知
+  const notificationContainer = document.createElement('div');
+  notificationContainer.className = `notification notification-${type}`;
+  notificationContainer.textContent = message;
+  document.body.appendChild(notificationContainer);
+  
+  // 3秒后自动移除
+  setTimeout(() => {
+    if (document.body.contains(notificationContainer)) {
+      document.body.removeChild(notificationContainer);
+    }
+  }, 3000);
+  
+  // 同时调用 Electron 的通知 API
+  if (window.electronAPI && window.electronAPI.showNotification) {
+    window.electronAPI.showNotification(message, type).catch(error => {
+      console.error('Electron 通知 API 调用失败:', error);
+    });
+  }
+}
+
 // 更新实例
 function updateP5Instance () {
   if (!p5Instance) return
@@ -155,14 +178,17 @@ async function setWallpaper() {
     // 设置壁纸
     const result = await window.electronAPI.setWallpaper(imagePath)
     if (!result) {
-      throw new Error('设置壁纸失败')
+      throw new Error('壁纸设置失败')
     }
 
-    //console.log('壁纸设置成功')
+    showNotification('壁纸设置成功', 'success')
   } catch (error) {
-    console.error('设置壁纸失败:', error)
-    throw error
+    console.error('壁纸设置失败:', error)
+    // 显示用户友好的错误提示，而不是抛出错误
+    showNotification(`壁纸设置失败: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error')
+    return false
   }
+  return true
 }
 
 // 组件挂载时的初始化
@@ -500,5 +526,40 @@ onUnmounted(() => {
   left: 0;
   width: 100%;
   height: 100%;
+}
+
+.notification {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 12px 20px;
+  border-radius: 6px;
+  color: white;
+  font-size: 14px;
+  z-index: 9999;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: fadeIn 0.3s, fadeOut 0.3s 2.7s;
+}
+
+.notification-success {
+  background-color: #42b983;
+}
+
+.notification-error {
+  background-color: #e74c3c;
+}
+
+.notification-info {
+  background-color: #4a90e2;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(20px); }
 }
 </style>

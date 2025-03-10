@@ -28,6 +28,9 @@ export interface ElectronAPI {
   
   /** Set system wallpaper */
   setWallpaper: (imagePath: string) => Promise<boolean>;
+  
+  /** Show a notification */
+  showNotification: (message: string, type?: string) => Promise<boolean>;
 }
 
 declare global {

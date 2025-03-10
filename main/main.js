@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, Notification } from 'electron';
 import Store from 'electron-store';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -147,6 +147,16 @@ ipcMain.handle('setStore', async (event, key, value) => {
 // Test handler
 ipcMain.handle('ping', () => {
   return 'Pong from main!';
+});
+
+// Notification
+ipcMain.handle('show-notification', (event, message, type) => {
+  const notificationTitle = type === 'error' ? 'ERROR' : 
+                           type === 'success' ? 'SUCCESS' : 'NOTE';
+  new Notification({ 
+    title: notificationTitle, 
+    body: message
+  }).show();
 });
 
 // Write image file for wallpaper

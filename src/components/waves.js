@@ -300,8 +300,17 @@ export default function waves(p) {
   p.createWallpaperCanvas = function () {
     const { width: screenWidth, height: screenHeight } = window.screen;
     let tempP5Instance = null;
+    let tempContainer = null;
 
     return new Promise((resolve) => {
+      // 创建一个临时容器，不添加到DOM中
+      tempContainer = document.createElement('div');
+      tempContainer.style.position = 'absolute';
+      tempContainer.style.left = '-9999px';
+      tempContainer.style.visibility = 'hidden';
+      tempContainer.classList.add('temp-wallpaper-container');
+      document.body.appendChild(tempContainer);
+
       tempP5Instance = new p5((p) => {
         p.setup = () => {
           const canvas = p.createCanvas(screenWidth, screenHeight);
@@ -336,15 +345,31 @@ export default function waves(p) {
           tempMountains.forEach((m) => m.display(p));
           p.pop();
           
-          // 获取画布数据并清理 p5 实例
+          // 获取画布数据
           const dataUrl = canvas.elt.toDataURL('image/png');
-          if (tempP5Instance) {
-            tempP5Instance.remove();
-            tempP5Instance = null;
-          }
+          
+          // 清理 p5 实例和临时容器
+          setTimeout(() => {
+            if (tempP5Instance) {
+              tempP5Instance.remove();
+              tempP5Instance = null;
+            }
+            
+            if (tempContainer && document.body.contains(tempContainer)) {
+              document.body.removeChild(tempContainer);
+            }
+            
+            // 清理可能残留的临时容器
+            document.querySelectorAll('.temp-wallpaper-container').forEach(el => {
+              if (el.parentNode) {
+                el.parentNode.removeChild(el);
+              }
+            });
+          }, 100);
+          
           resolve(dataUrl);
         };
-      });
+      }, tempContainer);
     });
   };
 }

@@ -14,6 +14,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   writeImageFile: (base64Url) => ipcRenderer.invoke('writeImageFile', base64Url),
   setWallpaper: (imagePath) => ipcRenderer.invoke('setWallpaper', imagePath),
 
+  // Notification
+  showNotification: (message, type) => ipcRenderer.invoke('show-notification', message, type),
+
   // Message listener
   onMessage: (callback) => {
     ipcRenderer.on('message', (event, arg) => callback(arg));
