@@ -1,9 +1,15 @@
 {
   "name": "zenwaves-electron",
+  "productName": "ZenWaves",
   "private": true,
   "version": "1.0.0",
   "description": "Transform your desktop into a tranquil realm where flowing waves dance with timeless Chinese poetry. A digital zen garden that brings ancient wisdom and modern aesthetics together, offering moments of peace in your daily digital life",
   "author": "Zen Waves Team",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kamusis/zenwaves-electron.git"
+  },
+  "license": "MIT",
   "type": "module",
   "main": "./main/main.js",
   "exports": "./main/main.js",
@@ -23,7 +29,6 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.1",
-    "ajv-formats": "^3.0.1",
     "concurrently": "^9.1.2",
     "electron": "^35.0.0",
     "electron-builder": "^25.1.8",
@@ -33,7 +38,7 @@
   },
   "build": {
     "appId": "com.zenwaves.app",
-    "productName": "Zen Waves",
+    "productName": "ZenWaves",
     "copyright": "Copyright 2025, Zen Waves Team",
     "directories": {
       "output": "dist-electron"
@@ -46,15 +51,15 @@
     "mac": {
       "category": "public.app-category.lifestyle",
       "icon": "public/images/logo.png",
-      "target": [
-        "dmg"
-      ]
+      "target": ["dmg"]
     },
     "win": {
       "icon": "public/images/logo.png",
-      "target": [
-        "portable"
-      ]
+      "target": ["portable"]
+    },
+    "linux": {
+      "icon": "public/images/logo.png",
+      "target": ["AppImage", "deb"]      
     },
     "nsis": {
       "oneClick": false,

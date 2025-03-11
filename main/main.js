@@ -112,6 +112,9 @@ function createWindow() {
     },
   });
 
+  //logger.log('App is packaged:', app.isPackaged);
+  //logger.log('Dir name is: ', __dirname);
+
   if (app.isPackaged) {
     win.loadFile(path.join(__dirname, '../dist/index.html')); // Production mode
   } else {
@@ -228,6 +231,7 @@ ipcMain.handle('setWallpaper', async (event, imagePath) => {
       command = `powershell -ExecutionPolicy Bypass -NoProfile -Command "Add-Type -Path '${scriptPath}'; [Wallpaper.Setter]::SetWallpaper('${imagePath}')"`;
     } else if (platform === 'linux') {
       // Linux 
+      // TODO: Verify if these commands works correctly on Linux for setting wallpaper
       // For GNOME: Both picture-uri and picture-uri-dark are set for light/dark themes
       // For KDE: Using plasma-apply-wallpaperimage
       command = `if command -v gsettings >/dev/null 2>&1; then
@@ -251,6 +255,11 @@ ipcMain.handle('setWallpaper', async (event, imagePath) => {
       } else {
         if (stderr) {
           logger.warn('stderr (NO ERROR):', stderr);
+        }
+        
+        if (platform === 'darwin') {
+          // On macOS, add a small delay to ensure wallpaper is set
+          await new Promise(resolve => setTimeout(resolve, 1000));
         }
         
         // Check if auto delete is enabled
