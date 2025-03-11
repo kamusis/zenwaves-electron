@@ -62,3 +62,23 @@ zenwaves-electron/
 └── README.md                   # Project documentation
 ```
 
+## Default Installation Destination
+
+### Linux
+Application directory: `/opt/ZenWaves`
+Configuration directory: `~/.config/ZenWaves`
+Wallpaper directory: `~/.config/ZenWaves/wallpapers`
+
+Main process: `/opt/ZenWaves/resources/app/main`
+Renderer process: `/opt/ZenWaves/resources/app/dist/assets`
+External scripts: `/opt/ZenWaves/resources/app/dist/scripts`
+
+### macOS (TODO)
+Application directory: `/Applications/ZenWaves.app`
+Configuration directory: `~/Library/Preferences/com.zenwaves.app.plist`
+Wallpaper directory: `~/Library/Application Support/ZenWaves/wallpapers`
+
+### Windows (TODO)
+Application directory: `C:\Program Files\ZenWaves`
+Configuration directory: `C:\Users\{username}\AppData\Local\ZenWaves\config`
+Wallpaper directory: `C:\Users\{username}\AppData\Local\ZenWaves\wallpapers`

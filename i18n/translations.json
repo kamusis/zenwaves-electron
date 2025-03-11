@@ -1,0 +1,36 @@
+{
+  "zh-CN": {
+    "reason": "错误原因：",
+    "font": "字体",
+    "loaded_success": "加载成功",
+    "loaded_failed": "加载失败",
+    "load_poem_api_error": "今日诗词API加载失败：",
+    "preload_fonts_start": "开始预加载所有字体...",
+    "font_loading": "字体 ${fontFamily} 尚未加载完成，正在加载...",
+    "auto_wallpaper_error": "自动更新壁纸失败:",
+    "electron_notification_error": "Electron通知API调用失败:",
+    "debug_log": "[DEBUG LOG]",
+    "debug_warn": "[DEBUG WARN]",
+    "error_log": "[DEBUG ERROR]",
+    "notification_title_error": "错误",
+    "wallpaper_set_success": "壁纸设置成功",
+    "wallpaper_set_failed": "壁纸设置失败"
+  },
+  "en-US": {
+    "reason": "Reason: ",
+    "font": "Font",
+    "loaded_success": "loaded successfully",
+    "loaded_failed": "loaded failed",
+    "load_poem_api_error": "Poetry API loading failed.",
+    "preload_fonts_start": "Starting to preload all fonts...",
+    "font_loading": "Font ${fontFamily} is still loading...",
+    "auto_wallpaper_error": "Failed to auto update wallpaper:",
+    "electron_notification_error": "Electron notification API call failed:",
+    "debug_log": "[DEBUG LOG]",
+    "debug_warn": "[DEBUG WARN]",
+    "error_log": "[DEBUG ERROR]",
+    "notification_title_error": "ERROR",
+    "wallpaper_set_success": "Wallpaper set successfully",
+    "wallpaper_set_failed": "Failed to set wallpaper"
+  }
+}

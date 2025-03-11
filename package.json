@@ -4,10 +4,10 @@
   "private": true,
   "version": "1.0.0",
   "description": "Transform your desktop into a tranquil realm where flowing waves dance with timeless Chinese poetry. A digital zen garden that brings ancient wisdom and modern aesthetics together, offering moments of peace in your daily digital life",
-  "author": "Zen Waves Team",
+  "author": "Zen Waves Team <kamusis@gmail.com>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/kamusis/zenwaves-electron.git"
+    "url": "git+https://github.com/kamusis/zenwaves-electron.git"
   },
   "license": "MIT",
   "type": "module",
@@ -47,6 +47,12 @@
       "dist/**/*",
       "main/**/*"
     ],
+    "extraFiles": [
+      {
+        "from": "i18n",
+        "to": "resources/app/i18n"
+      }
+    ],
     "asar": false,
     "mac": {
       "category": "public.app-category.lifestyle",
@@ -58,6 +64,7 @@
       "target": ["portable"]
     },
     "linux": {
+      "category": "Utility",
       "icon": "public/images/logo.png",
       "target": ["AppImage", "deb"]      
     },
