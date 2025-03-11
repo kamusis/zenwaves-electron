@@ -230,10 +230,10 @@ ipcMain.handle('setWallpaper', async (event, imagePath) => {
       // Use setWallpaper.cs script to set desktop wallpaper
       command = `powershell -ExecutionPolicy Bypass -NoProfile -Command "Add-Type -Path '${scriptPath}'; [Wallpaper.Setter]::SetWallpaper('${imagePath}')"`;
     } else if (platform === 'linux') {
-      // Linux 
-      // TODO: Verify if these commands works correctly on Linux for setting wallpaper
+      // Linux (GNOME or KDE)
       // For GNOME: Both picture-uri and picture-uri-dark are set for light/dark themes
-      // For KDE: Using plasma-apply-wallpaperimage
+      // TODO: Verify if these commands works correctly on Linux KDE
+      // For KDE: Using plasma-apply-wallpaperimage (!NOT verified)
       command = `if command -v gsettings >/dev/null 2>&1; then
         gsettings set org.gnome.desktop.background picture-uri "file://${imagePath.replace(/ /g, '\\ ')}"
         gsettings set org.gnome.desktop.background picture-uri-dark "file://${imagePath.replace(/ /g, '\\ ')}"
@@ -257,8 +257,8 @@ ipcMain.handle('setWallpaper', async (event, imagePath) => {
           logger.warn('stderr (NO ERROR):', stderr);
         }
         
-        if (platform === 'darwin') {
-          // On macOS, add a small delay to ensure wallpaper is set
+        if (platform === 'darwin' || platform === 'linux') {
+          // On macOS or Linux, add a small delay to ensure wallpaper is set
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
         
