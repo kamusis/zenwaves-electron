@@ -227,7 +227,7 @@ onUnmounted(() => {
   <div class="wallpaper">
     <div class="settings">
       <div class="button-group">
-        <button class="set-button refresh-button" @click="wallpaperMethods.fetchPoem">Verse</button>
+        <button class="set-button refresh-button" @click="wallpaperMethods.fetchPoem">Motto</button>
         <button class="set-button refresh-button" @click="changeMethods.onChangeWavecolor">Ripple</button>
         <button class="set-button" @click="changeMethods.onChangeTheme">{{ wallpaperParams.isDarkMode ? 'Dawn' : 'Dusk' }}</button>
         <button class="set-button" @click="setWallpaper">Apply</button>

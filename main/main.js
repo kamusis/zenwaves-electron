@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Notification } from 'electron';
+import { app, BrowserWindow, ipcMain, Notification, Tray, Menu } from 'electron';
 import Store from 'electron-store';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -36,6 +36,9 @@ logger.log('Environment:', logger.isDevelopment ? 'Development' : 'Production');
 // Get __dirname equivalent
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Define main window as a global variable
+let win = null; 
 
 // Initialize electron-store
 const store = new Store();
@@ -98,7 +101,7 @@ async function deleteTempFile(filePath) {
 }
 
 function createWindow() {
-  const win = new BrowserWindow({
+  win = new BrowserWindow({
     width: 1200,
     height: 800,
     minWidth: 1100,  // Set minimum window size
@@ -120,7 +123,22 @@ function createWindow() {
   } else {
     win.loadURL('http://localhost:5173'); // Development mode
     //win.webContents.openDevTools(); // Automatically open developer tools
-  }
+  };
+
+    // When window is minimized, hide the window
+    win.on('minimize', (event) => {
+      event.preventDefault();
+      win.hide();
+    });
+  
+    // When window is closed, hide the window (TODO: let user can choose is window hidden or quit app when close window)
+    win.on('close', (event) => {
+      if (!app.isQuiting) {
+        event.preventDefault();
+        win.hide();
+      }
+      return false;
+    });
 }
 
 // Store operations
@@ -285,14 +303,52 @@ ipcMain.handle('setWallpaper', async (event, imagePath) => {
 });
 
 // Open the main window
+let tray = null;
+
 app.whenReady().then(() => {
   createWindow();
-  setTimeout(() => {
-    const win = BrowserWindow.getAllWindows()[0];
-    win.webContents.send('message', 'Hello from main process!');
-  }, 2000);
+
+  // Create tray icon
+  let trayIconPath;
+  if (app.isPackaged) {
+    // Production environment path
+    trayIconPath = path.join(process.resourcesPath, 'app', 'dist', 'images', 'trayicon.png');
+    // If the above path is incorrect, try alternative paths
+    if (!fs.existsSync(trayIconPath)) {
+      trayIconPath = path.join(app.getAppPath(), 'images', 'trayicon.png');
+    }
+  } else {
+    // Development environment path
+    trayIconPath = path.join(__dirname, '../public/images/trayicon.png');
+  }
+
+  tray = new Tray(trayIconPath);
+  const contextMenu = Menu.buildFromTemplate([
+    { label: 'Open', click: () => win.show() },
+    { label: 'Settings', click: () => {
+      // TODO:Add logic to open settings window or perform settings-related action
+      win.webContents.send('open-settings'); 
+    }},
+    { label: 'Quit', click: () => {
+      app.isQuiting = true;
+      app.quit();
+    }}
+  ]);
+  tray.setToolTip('ZenWaves');
+  tray.setContextMenu(contextMenu);
+
+  tray.on('click', () => win.show());
 });
 
+// Handle app activation, when click tray icon or relaunch app from Dock on macOS
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) {
+    createWindow();
+  }
+});
+
+// Handle app quit
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
+
