@@ -4,12 +4,12 @@ import { FONT_OPTIONS } from './config.js'  // 导入字体配置
 // 提取常量配置
 const WAVE_CONFIG = {
   NOISE_DETAIL: { SCALE: 3, FALLOFF: 1.4 },
-  WAVE_COUNT: 5,
+  WAVE_COUNT: 5,    // total wave amount
   ALPHA_STEP: 50,
-  HEIGHT_STEP: 35,
-  VERTEX_STEP: 6,
-  NOISE_STEP: 0.03,
-  MAX_NOISE_HEIGHT: 80
+  HEIGHT_STEP: 60,
+  VERTEX_STEP: 10,
+  NOISE_STEP: 0.02, // more smaller more smooth
+  MAX_NOISE_HEIGHT: 100
 };
 
 const TEXT_CONFIG = {

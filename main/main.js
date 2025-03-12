@@ -119,7 +119,7 @@ function createWindow() {
     win.loadFile(path.join(__dirname, '../dist/index.html')); // Production mode
   } else {
     win.loadURL('http://localhost:5173'); // Development mode
-    win.webContents.openDevTools(); // Automatically open developer tools
+    //win.webContents.openDevTools(); // Automatically open developer tools
   }
 }
 
