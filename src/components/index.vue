@@ -31,6 +31,20 @@ async function initializeStore() {
   }
 }
 
+// 收到trayicon菜单点击“Settings”消息
+window.electronAPI.onSettingsChannel((arg) => {
+  // 当前在settings chanel只发送了open-settings消息
+  if (arg === 'open-settings') {
+    // 获取设置框体元素
+    const settingsElement = document.querySelector('.settings');
+    
+    if (settingsElement) {
+      // 应用闪烁动画
+      settingsElement.classList.add('highlight-blink');
+    }
+  }
+});
+
 // 监听参数变化并保存到存储中
 watch(wallpaperParams, (newValue) => {
   //console.log('[DEBUG] 参数变化:', newValue);
@@ -178,7 +192,7 @@ async function setWallpaper() {
     // 设置壁纸
     const result = await window.electronAPI.setWallpaper(imagePath)
     if (!result) {
-      throw new Error('壁纸设置失败')
+      throw new Error('壁纸设置失败, no valid result')
     }
 
     showNotification('壁纸设置成功', 'success')
@@ -561,5 +575,27 @@ onUnmounted(() => {
 @keyframes fadeOut {
   from { opacity: 1; transform: translateY(0); }
   to { opacity: 0; transform: translateY(20px); }
+}
+
+@keyframes elegant-blink {
+  0% { 
+    background-color: rgba(52, 152, 219, 0.2);
+    box-shadow: 0 0 10px rgba(52, 152, 219, 0.5);
+  }
+  50% { 
+    background-color: rgba(52, 152, 219, 0.4);
+    box-shadow: 0 0 15px rgba(52, 152, 219, 0.7);
+  }
+  100% { 
+    background-color: none;
+    box-shadow: none;
+  }
+}
+
+.highlight-blink {
+  animation: 
+    elegant-blink 0.7s cubic-bezier(0.4, 0, 0.2, 1) 2; /* 更平滑的动画曲线 */
+  border-radius: 8px; /* 圆角效果 */
+  transition: all 0.3s ease; /* 平滑过渡 */
 }
 </style>

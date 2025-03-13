@@ -17,6 +17,9 @@ export interface ElectronAPI {
   /** Register a callback for receiving messages from main process */
   onMessage: (callback: (arg: any) => void) => void;
   
+  /** Settings channel message */
+  onSettingsChannel: (callback: (arg: any) => void) => void;
+  
   /** Write text content to Downloads directory */
   writeTextFile: (text: string) => Promise<string>;
   

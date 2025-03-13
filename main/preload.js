@@ -17,8 +17,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Notification
   showNotification: (message, type) => ipcRenderer.invoke('show-notification', message, type),
 
-  // Message listener
+  // Normal Message listener，not used for now
   onMessage: (callback) => {
     ipcRenderer.on('message', (event, arg) => callback(arg));
-  }, 
+  },
+  
+  // Settings channel message
+  onSettingsChannel: (callback) => {
+    ipcRenderer.on('settings-channel', (event, arg) => callback(arg));
+  }
 })

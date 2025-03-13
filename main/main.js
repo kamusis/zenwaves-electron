@@ -43,6 +43,9 @@ let win = null;
 // Initialize electron-store
 const store = new Store();
 
+// Set application name explicitly
+app.name = 'ZenWaves';
+
 // Initialize default parameters
 if (!store.has('wallpaperParams')) {
   store.set('wallpaperParams', {
@@ -108,6 +111,7 @@ function createWindow() {
     minHeight: 700,
     useContentSize: true,  // Use content size instead of window size
     icon: path.join(__dirname, '../public/images/logo.png'),
+    autoHideMenuBar: true,  // Hide the menu bar
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'), // Specify preload script
       nodeIntegration: false, // Enable Node integration
@@ -325,10 +329,15 @@ app.whenReady().then(() => {
   tray = new Tray(trayIconPath);
   const contextMenu = Menu.buildFromTemplate([
     { label: 'Open', click: () => win.show() },
-    { label: 'Settings', click: () => {
-      // TODO:Add logic to open settings window or perform settings-related action
-      win.webContents.send('open-settings'); 
-    }},
+    { 
+      label: 'Settings', 
+      click: () => {
+        if (win) {
+          win.show(); // Ensure window is visible
+          win.webContents.send('settings-channel', 'open-settings'); // Send event to renderer
+        }
+      } 
+    },
     { label: 'Quit', click: () => {
       app.isQuiting = true;
       app.quit();
@@ -351,4 +360,3 @@ app.on('activate', () => {
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
-
