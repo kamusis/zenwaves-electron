@@ -73,12 +73,12 @@ Main process: `/opt/ZenWaves/resources/app/main`
 Renderer process: `/opt/ZenWaves/resources/app/dist/assets`
 External scripts: `/opt/ZenWaves/resources/app/dist/scripts`
 
-### macOS (TODO)
+### macOS 
 Application directory: `/Applications/ZenWaves.app`
-Configuration directory: `~/Library/Preferences/com.zenwaves.app.plist`
+Configuration directory: `~/Library/Application Support/ZenWaves`
 Wallpaper directory: `~/Library/Application Support/ZenWaves/wallpapers`
 
-### Windows (TODO)
+### Windows 
 Application directory: `C:\Program Files\ZenWaves`
-Configuration directory: `C:\Users\{username}\AppData\Local\ZenWaves\config`
-Wallpaper directory: `C:\Users\{username}\AppData\Local\ZenWaves\wallpapers`
+Configuration directory: `C:\Users\{username}\AppData\Roaming\ZenWaves\`
+Wallpaper directory: `C:\Users\{username}\AppData\Roaming\ZenWaves\wallpapers`

@@ -22,12 +22,31 @@ const wallpaperParams = reactive({
   autoDeleteWallpaper: true,
 });
 
+const apiKeyInput = reactive({
+  value: '',
+  isSet: false,
+  isEditing: false
+})
+
+const aiPromptInput = reactive({
+  value: ''
+})
+
 // 初始化存储值
 async function initializeStore() {
   const params = await window.electronAPI.getStore('wallpaperParams');
-  //console.log('[DEBUG] 从存储中获取参数:', params);
   if (params) {
-    Object.assign(wallpaperParams, params);
+    wallpaperParams.waveColor = params.waveColor || wallpaperParams.waveColor;
+    wallpaperParams.isDarkMode = params.isDarkMode !== undefined ? params.isDarkMode : wallpaperParams.isDarkMode;
+    wallpaperParams.fontFamily = params.fontFamily || wallpaperParams.fontFamily;
+    wallpaperParams.changeInterval = params.changeInterval || wallpaperParams.changeInterval;
+  }
+  
+  // 检查是否已设置 API Key
+  const apiKey = await window.electronAPI.getStore('openai-api-key');
+  if (apiKey) {
+    apiKeyInput.isSet = true;
+    apiKeyInput.value = apiKey;
   }
 }
 
@@ -47,7 +66,6 @@ window.electronAPI.onSettingsChannel((arg) => {
 
 // 监听参数变化并保存到存储中
 watch(wallpaperParams, (newValue) => {
-  //console.log('[DEBUG] 参数变化:', newValue);
   const plainParams = JSON.parse(JSON.stringify(newValue));
   window.electronAPI.setStore('wallpaperParams', plainParams);
 }, { deep: true });
@@ -58,15 +76,38 @@ let autoChangeTimer: ReturnType<typeof setInterval> | null = null
 // 壁纸相关方法
 const wallpaperMethods = {
   // 获取诗词
-  fetchPoem () {
-    loadPoem(
-      (result) => {
-        poemData.content = result.data.content
-        poemData.author = result.data.origin.author
-        poemData.title = result.data.origin.title
-        updateP5Instance()
+  async fetchPoem (userInput = '') {
+    if (!userInput) {
+      // 原有逻辑：从今日诗词 API 获取诗词
+      loadPoem(
+        (result) => {
+          poemData.content = result.data.content
+          poemData.author = result.data.origin.author
+          poemData.title = result.data.origin.title
+          updateP5Instance()
+        }
+      );
+    } else {
+      try {
+        // 新增逻辑：从 AI 获取诗词
+        const aiResponse = await window.electronAPI.interactWithAI(userInput);
+        if (aiResponse.success) {
+          const poemInfo = JSON.parse(aiResponse.response);
+          poemData.content = poemInfo.verse;
+          poemData.author = poemInfo.author;
+          poemData.title = poemInfo.poem_name;
+          updateP5Instance();
+        } else {
+          // 处理错误情况
+          const errorMessage = aiResponse.error || 'Unknown error occurred';
+          showNotification(`Failed to get poem: ${errorMessage}`, 'error');
+        }
+      } catch (error: unknown) {
+        // 处理异常情况
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        showNotification(`Error: ${errorMessage}`, 'error');
       }
-    );
+    }
   },
   stopAutoChange () {
     if (autoChangeTimer) {
@@ -205,6 +246,19 @@ async function setWallpaper() {
   return true
 }
 
+// 保存 OpenAI API Key
+async function saveApiKey() {
+  await window.electronAPI.setStore('openai-api-key', apiKeyInput.value);
+  showNotification('OpenAI API Key saved successfully', 'success');
+  apiKeyInput.isSet = true;
+  apiKeyInput.isEditing = false;
+}
+
+// 启用 API Key 编辑
+function enableApiKeyEdit() {
+  apiKeyInput.isEditing = true;
+}
+
 // 组件挂载时的初始化
 onMounted(async () => {
   await initializeStore()
@@ -240,52 +294,92 @@ onUnmounted(() => {
 <template>
   <div class="wallpaper">
     <div class="settings">
-      <div class="button-group">
-        <button class="set-button refresh-button" @click="wallpaperMethods.fetchPoem">Motto</button>
-        <button class="set-button refresh-button" @click="changeMethods.onChangeWavecolor">Ripple</button>
-        <button class="set-button" @click="changeMethods.onChangeTheme">{{ wallpaperParams.isDarkMode ? 'Dawn' : 'Dusk' }}</button>
-        <button class="set-button" @click="setWallpaper">Apply</button>
-        <label class="auto-delete-label">
-          <input
-            type="checkbox"
-            v-model="wallpaperParams.autoDeleteWallpaper"
-            class="auto-delete-checkbox"
-          >
-          Auto Clean
-          <span class="tooltip-icon" data-tooltip="Clean up temporary files after setting wallpaper">?</span>
-        </label>
-      </div>
-      <div class="select-group">
-        <div class="interval-setting">
-          Auto Change
-          <select
-            :value="wallpaperParams.changeInterval"
-            @change="e => changeMethods.onChangeInterval(Number((e.target as HTMLSelectElement).value))"
-            class="interval-select"
-          >
-            <option v-for="option in INTERVAL_OPTIONS" :key="option.value" :value="option.value">
-              {{ option.label }}
-            </option>
-          </select>
-        </div>
-        <div class="interval-setting">
-          Font Style
-          <select
-            :value="wallpaperParams.fontFamily"
-            @change="e => changeMethods.onChangeFont((e.target as HTMLSelectElement).value)"
-            class="font-select"
-            :style="{ fontFamily: wallpaperParams.fontFamily }"
-          >
-            <option 
-              v-for="option in FONT_OPTIONS" 
-              :key="option.value" 
-              :value="option.value"
-              :style="{ fontFamily: option.value }"
+      <div class="top-controls">
+        <div class="button-group">
+          <button class="set-button refresh-button" @click="wallpaperMethods.fetchPoem(aiPromptInput.value)">Motto</button>
+          <button class="set-button refresh-button" @click="changeMethods.onChangeWavecolor">Ripple</button>
+          <button class="set-button" @click="changeMethods.onChangeTheme">{{ wallpaperParams.isDarkMode ? 'Dawn' : 'Dusk' }}</button>
+          <button class="set-button" @click="setWallpaper">Apply</button>
+          <label class="auto-delete-label">
+            <input
+              type="checkbox"
+              v-model="wallpaperParams.autoDeleteWallpaper"
+              class="auto-delete-checkbox"
             >
-              {{ option.label }}
-            </option>
-          </select>
+            Auto Clean
+            <span class="tooltip-icon" data-tooltip="Clean up temporary files after setting wallpaper">?</span>
+          </label>
         </div>
+        <div class="select-group">
+          <div class="interval-setting">
+            Auto Change
+            <select
+              :value="wallpaperParams.changeInterval"
+              @change="e => changeMethods.onChangeInterval(Number((e.target as HTMLSelectElement).value))"
+              class="interval-select"
+            >
+              <option v-for="option in INTERVAL_OPTIONS" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+          </div>
+          <div class="interval-setting">
+            Font Style
+            <select
+              :value="wallpaperParams.fontFamily"
+              @change="e => changeMethods.onChangeFont((e.target as HTMLSelectElement).value)"
+              class="font-select"
+              :style="{ fontFamily: wallpaperParams.fontFamily }"
+            >
+              <option 
+                v-for="option in FONT_OPTIONS" 
+                :key="option.value" 
+                :value="option.value"
+                :style="{ fontFamily: option.value }"
+              >
+                {{ option.label }}
+              </option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="input-group">
+        <label for="ai-input" class="input-label">AI Prompt</label>
+        <input 
+          type="text" 
+          v-model="aiPromptInput.value" 
+          class="ai-input fixed-width-input" 
+          placeholder="OpenAI key needed! Poet name or poem name..."
+          @keyup.enter="wallpaperMethods.fetchPoem(aiPromptInput.value)"
+          id="ai-input"
+        />
+        <label for="api-key-input" class="input-label">OpenAI API Key</label>
+        <input 
+          v-if="apiKeyInput.isSet && !apiKeyInput.isEditing" 
+          type="password" 
+          :value="'********'" 
+          class="ai-input disabled-input" 
+          placeholder="API Key setted"
+          disabled
+          id="api-key-input"
+        />
+        <input 
+          v-else
+          type="password" 
+          v-model="apiKeyInput.value" 
+          class="ai-input" 
+          placeholder="Enter your OpenAI API key..."
+          @keyup.enter="saveApiKey"
+          id="api-key-input"
+        />
+        <button 
+          v-if="apiKeyInput.isSet && !apiKeyInput.isEditing" 
+          @click="enableApiKeyEdit" 
+          class="edit-button"
+          title="Edit API Key"
+        >
+          <span class="edit-icon">✎</span>
+        </button>
       </div>
     </div>
     <div class="preview" :style="{ backgroundColor: wallpaperParams.isDarkMode ? '#323232' : '#e6e6e6' }">
@@ -305,24 +399,73 @@ onUnmounted(() => {
 
 .settings {
   display: flex;
+  flex-direction: column;
   margin-bottom: 14px;
   justify-content: space-between;
   background-color: #363636;
   padding: 12px;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  gap: 12px;
+}
+
+.top-controls {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  width: 100%;
 }
 
 .button-group {
   display: flex;
   gap: 12px;
   align-items: center;
+  flex-wrap: wrap;
+  width: 50%;
 }
 
 .select-group {
   display: flex;
-  gap: 20px;
+  flex-direction: row;
+  gap: 12px;
   align-items: center;
+  width: 50%;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.input-group {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+}
+
+.input-label {
+  color: #e0e0e0;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.ai-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #4a4a4a;
+  border-radius: 6px;
+  background-color: #424242;
+  color: white;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.ai-input:focus {
+  outline: none;
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
+
+.ai-input::placeholder {
+  color: #999;
 }
 
 .interval-setting {
@@ -597,5 +740,38 @@ onUnmounted(() => {
     elegant-blink 0.7s cubic-bezier(0.4, 0, 0.2, 1) 2; /* 更平滑的动画曲线 */
   border-radius: 8px; /* 圆角效果 */
   transition: all 0.3s ease; /* 平滑过渡 */
+}
+
+.disabled-input {
+  background-color: #3a3a3a;
+  color: #888;
+  cursor: not-allowed;
+}
+
+.edit-button {
+  background: none;
+  border: none;
+  color: #4a90e2;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  transition: all 0.2s ease;
+}
+
+.edit-button:hover {
+  color: #6aa9e9;
+}
+
+.edit-icon {
+  font-size: 18px;
+}
+
+.fixed-width-input {
+  width: 200px !important;
+  flex: none !important;
 }
 </style>

@@ -31,6 +31,13 @@ export interface ElectronAPI {
   
   /** Set system wallpaper */
   setWallpaper: (imagePath: string) => Promise<boolean>;
+
+  /** Interact with OpenAI API */
+  interactWithAI: (userInput: string) => Promise<{
+    success: boolean;
+    response?: string;
+    error?: string;
+  }>;
   
   /** Show a notification */
   showNotification: (message: string, type?: string) => Promise<boolean>;

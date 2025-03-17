@@ -5,6 +5,59 @@ import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
 import os from 'node:os';
 import { exec } from 'node:child_process';
+import OpenAI from 'openai';
+
+// Initialize OpenAI client
+let openai = new OpenAI({
+  apiKey: ''  // Will be loaded from store later
+});
+
+// Load API key from store
+const loadApiKey = () => {
+  try {
+    const apiKey = store.get('openai-api-key');
+    if (apiKey) {
+      openai = new OpenAI({
+        apiKey: apiKey
+      });
+      logger.log('API key loaded from store');
+    }
+  } catch (error) {
+    logger.error('Failed to load API key from store:', error);
+  }
+};
+
+// Check if OpenAI API key is valid
+const isValidApiKey = async (key) => {
+  if (!key || typeof key !== 'string' || key.trim().length === 0) {
+    return { isValid: false, error: 'API key not provided' };
+  }
+
+  try {
+    // Create a new OpenAI instance with the key
+    const testClient = new OpenAI({ apiKey: key });
+    
+    // Try to make a minimal API call to verify the key
+    await testClient.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: "test" }],
+      max_tokens: 1
+    });
+    
+    return { isValid: true };
+  } catch (error) {
+    logger.error('API key validation failed:', error.message);
+    
+    // Check error type
+    if (error.status === 401 || error.message.includes('auth')) {
+      return { isValid: false, error: 'Invalid API key' };
+    } else if (error.message.includes('network') || error.message.includes('ECONNREFUSED') || error.message.includes('timeout')) {
+      return { isValid: false, error: 'Network error, please check your internet connection' };
+    } else {
+      return { isValid: false, error: `API error: ${error.message}` };
+    }
+  }
+};
 
 // Logger utility
 const logger = {
@@ -146,32 +199,106 @@ function createWindow() {
 }
 
 // Store operations
-ipcMain.handle('getStore', async (event, key) => {
-  if (key.includes('.')) {
-    // Handle single property access, e.g., 'wallpaperParams.waveColor'
-    const [objKey, paramName] = key.split('.');
-    if (objKey === 'wallpaperParams') {
-      return getWallpaperParam(paramName);
-    }
-  }
+ipcMain.handle('getStore', (event, key) => {
   return store.get(key);
 });
 
-ipcMain.handle('setStore', async (event, key, value) => {
-  if (key.includes('.')) {
-    // Handle single property setting, e.g., 'wallpaperParams.waveColor'
-    const [objKey, paramName] = key.split('.');
-    if (objKey === 'wallpaperParams') {
-      return setWallpaperParam(paramName, value);
-    }
-  }
+ipcMain.handle('setStore', (event, key, value) => {
   store.set(key, value);
+  
+  // If setting the OpenAI API key, update the client
+  if (key === 'openai-api-key' && value) {
+    openai = new OpenAI({
+      apiKey: value
+    });
+    logger.log('API key updated from store');
+  }
+  
   return true;
 });
 
 // Test handler
 ipcMain.handle('ping', () => {
   return 'Pong from main!';
+});
+
+// AI interaction handler
+// TODO: The AI currently returns incorrect poems, such as mismatched poems and poet names, or fabricated poems, need to fix this
+ipcMain.handle('interact-with-ai', async (event, userInput) => {
+  try {
+    // Always use the API key from store
+    const apiKey = store.get('openai-api-key');
+    if (apiKey && apiKey !== openai.apiKey) {
+      // Update the OpenAI client with the stored API key
+      openai = new OpenAI({
+        apiKey: apiKey
+      });
+      logger.log('Using API key from store');
+    }
+    
+    const keyValidation = await isValidApiKey(openai.apiKey);
+    if (!keyValidation.isValid) {
+      logger.warn('OpenAI API key validation failed:', keyValidation.error);
+      return {
+        success: false,
+        error: keyValidation.error
+      };
+    }
+
+    // Base prompt template - keeping it in English as per user requirements
+    const fullPrompt = `Find a famous Chinese poem that matches the following poet name or poem name: ${userInput}, and return the result in JSON format.
+
+If a matching poem is found, return JSON in this structure:
+{"verse": "the two most iconic lines", "poem_name": "poem name", "author": "author"}
+
+If no matching poem is found or if the input is not a valid poet/poem name, return JSON in this structure:
+{"error": "brief error message explaining why no poem was found"}
+
+Always return a valid JSON string, no additional text or explanation needed.`;
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: "You are a knowledgeable poetry assistant that always responds in valid JSON format." },
+        { role: "user", content: fullPrompt }
+      ],
+      temperature: 0.7,
+      max_tokens: 150
+    });
+
+    const response = completion.choices[0].message.content.trim();
+    
+    try {
+      // Parse the response to verify it's valid JSON
+      const jsonResponse = JSON.parse(response);
+      
+      // Check if it's an error response
+      if (jsonResponse.error) {
+        return {
+          success: false,
+          error: jsonResponse.error
+        };
+      }
+      
+      // It's a valid poem response
+      return {
+        success: true,
+        response: response
+      };
+    } catch (error) {
+      logger.error('Failed to parse AI response:', error);
+      return {
+        success: false,
+        error: 'Invalid response format from AI'
+      };
+    }
+  } catch (error) {
+    logger.error('AI interaction failed:', error);
+    return {
+      success: false,
+      error: error.message || 'Unknown error occurred'
+    };
+  }
 });
 
 // Notification
@@ -310,6 +437,9 @@ ipcMain.handle('setWallpaper', async (event, imagePath) => {
 let tray = null;
 
 app.whenReady().then(() => {
+  // Load API key from store
+  loadApiKey();
+  
   createWindow();
 
   // Create tray icon
