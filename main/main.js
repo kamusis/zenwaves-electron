@@ -246,7 +246,7 @@ ipcMain.handle('interact-with-ai', async (event, userInput) => {
     }
 
     // Base prompt template - keeping it in English as per user requirements
-    const fullPrompt = `Find a famous Chinese poem that matches the following poet name or poem name: ${userInput}, and return the result in JSON format.
+    const fullPrompt = `Find a famous Chinese poem that matches the following poet name or poem name or related poem: ${userInput}, and return the result in JSON format.
 
 If a matching poem is found, return JSON in this structure:
 {"verse": "the two most iconic lines", "poem_name": "poem name", "author": "author"}
@@ -262,7 +262,7 @@ Always return a valid JSON string, no additional text or explanation needed.`;
         { role: "system", content: "You are a knowledgeable poetry assistant that always responds in valid JSON format." },
         { role: "user", content: fullPrompt }
       ],
-      temperature: 0.7,
+      temperature: 0.3, // Lower temperature for more factual responses
       max_tokens: 150
     });
 
@@ -277,6 +277,14 @@ Always return a valid JSON string, no additional text or explanation needed.`;
         return {
           success: false,
           error: jsonResponse.error
+        };
+      }
+      
+      // Validate the response has all required fields
+      if (!jsonResponse.verse || !jsonResponse.poem_name || !jsonResponse.author) {
+        return {
+          success: false,
+          error: 'Incomplete poem information received'
         };
       }
       

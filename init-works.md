@@ -66,19 +66,27 @@ zenwaves-electron/
 
 ### Linux
 Application directory: `/opt/ZenWaves`
+
 Configuration directory: `~/.config/ZenWaves`
+
 Wallpaper directory: `~/.config/ZenWaves/wallpapers`
 
 Main process: `/opt/ZenWaves/resources/app/main`
+
 Renderer process: `/opt/ZenWaves/resources/app/dist/assets`
+
 External scripts: `/opt/ZenWaves/resources/app/dist/scripts`
 
 ### macOS 
 Application directory: `/Applications/ZenWaves.app`
+
 Configuration directory: `~/Library/Application Support/ZenWaves`
+
 Wallpaper directory: `~/Library/Application Support/ZenWaves/wallpapers`
 
 ### Windows 
 Application directory: `C:\Program Files\ZenWaves`
+
 Configuration directory: `C:\Users\{username}\AppData\Roaming\ZenWaves\`
+
 Wallpaper directory: `C:\Users\{username}\AppData\Roaming\ZenWaves\wallpapers`
