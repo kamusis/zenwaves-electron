@@ -25,7 +25,7 @@ dist-electron
 *.sw?
 
 # Windsurf specific
-windsurfrules
+.windsurfrules
 
 # Environment variables
 .env
