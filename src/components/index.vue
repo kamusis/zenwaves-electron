@@ -5,7 +5,7 @@ import p5 from 'p5'
 import waves from './waves.js'
 import getRandomColor from './getRandomColor.js'
 import loadPoem from './loadPoem.js'
-import { INTERVAL_OPTIONS, FONT_OPTIONS } from './config.js'
+import { INTERVAL_OPTIONS, FONT_OPTIONS, API_OPTIONS, DEFAULT_API } from './config.js'
 
 // 从存储中获取初始值或使用默认值
 const poemData = reactive({
@@ -20,6 +20,7 @@ const wallpaperParams = reactive({
   changeInterval: 60,
   fontFamily: 'JXZhuoKai',
   autoDeleteWallpaper: true,
+  apiSource: DEFAULT_API
 });
 
 const apiKeyInput = reactive({
@@ -40,6 +41,7 @@ async function initializeStore() {
     wallpaperParams.isDarkMode = params.isDarkMode !== undefined ? params.isDarkMode : wallpaperParams.isDarkMode;
     wallpaperParams.fontFamily = params.fontFamily || wallpaperParams.fontFamily;
     wallpaperParams.changeInterval = params.changeInterval || wallpaperParams.changeInterval;
+    wallpaperParams.apiSource = params.apiSource || wallpaperParams.apiSource;
   }
   
   // 检查是否已设置 API Key
@@ -78,13 +80,16 @@ const wallpaperMethods = {
   // 获取诗词
   async fetchPoem (userInput = '') {
     if (!userInput) {
-      // 原有逻辑：从今日诗词 API 获取诗词
+      // 原有逻辑：从选定API 获取诗词
       loadPoem(
         (result) => {
           poemData.content = result.data.content
           poemData.author = result.data.origin.author
           poemData.title = result.data.origin.title
           updateP5Instance()
+        },
+        {
+          apiSource: wallpaperParams.apiSource
         }
       );
     } else {
@@ -168,6 +173,13 @@ const changeMethods = {
   onChangeFont (value: string) {
     wallpaperParams.fontFamily = value
     updateP5Instance()
+  },
+
+  // 更换API源
+  onChangeApiSource (value: string) {
+    wallpaperParams.apiSource = value
+    // 自动获取新诗词当API变化时
+    wallpaperMethods.fetchPoem()
   }
 }
 
@@ -312,6 +324,18 @@ onUnmounted(() => {
         </div>
         <div class="select-group">
           <div class="interval-setting">
+            API Source
+            <select
+              :value="wallpaperParams.apiSource"
+              @change="e => changeMethods.onChangeApiSource((e.target as HTMLSelectElement).value)"
+              class="api-select"
+            >
+              <option v-for="option in API_OPTIONS" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+          </div>
+          <div class="interval-setting">
             Auto Change
             <select
               :value="wallpaperParams.changeInterval"
@@ -344,42 +368,46 @@ onUnmounted(() => {
         </div>
       </div>
       <div class="input-group">
-        <label for="ai-input" class="input-label">AI Prompt</label>
-        <input 
-          type="text" 
-          v-model="aiPromptInput.value" 
-          class="ai-input fixed-width-input" 
-          placeholder="OpenAI key needed! Poet name or poem name..."
-          @keyup.enter="wallpaperMethods.fetchPoem(aiPromptInput.value)"
-          id="ai-input"
-        />
-        <label for="api-key-input" class="input-label">OpenAI API Key</label>
-        <input 
-          v-if="apiKeyInput.isSet && !apiKeyInput.isEditing" 
-          type="password" 
-          :value="'********'" 
-          class="ai-input disabled-input" 
-          placeholder="API Key setted"
-          disabled
-          id="api-key-input"
-        />
-        <input 
-          v-else
-          type="password" 
-          v-model="apiKeyInput.value" 
-          class="ai-input" 
-          placeholder="Enter your OpenAI API key..."
-          @keyup.enter="saveApiKey"
-          id="api-key-input"
-        />
-        <button 
-          v-if="apiKeyInput.isSet && !apiKeyInput.isEditing" 
-          @click="enableApiKeyEdit" 
-          class="edit-button"
-          title="Edit API Key"
-        >
-          <span class="edit-icon">✎</span>
-        </button>
+        <div class="left-inputs">
+          <label for="ai-input" class="input-label">AI Prompt</label>
+          <input 
+            type="text" 
+            v-model="aiPromptInput.value" 
+            class="ai-input fixed-width-input" 
+            placeholder="OpenAI key needed! Poet name or poem name..."
+            @keyup.enter="wallpaperMethods.fetchPoem(aiPromptInput.value)"
+            id="ai-input"
+          />
+        </div>
+        <div class="right-inputs">
+          <label for="api-key-input" class="input-label">OpenAI API Key</label>
+          <input 
+            v-if="apiKeyInput.isSet && !apiKeyInput.isEditing" 
+            type="password" 
+            :value="'********'" 
+            class="ai-input disabled-input api-key-input" 
+            placeholder="API Key setted"
+            disabled
+            id="api-key-input"
+          />
+          <input 
+            v-else
+            type="password" 
+            v-model="apiKeyInput.value" 
+            class="ai-input api-key-input" 
+            placeholder="Enter your OpenAI API key..."
+            @keyup.enter="saveApiKey"
+            id="api-key-input"
+          />
+          <button 
+            v-if="apiKeyInput.isSet && !apiKeyInput.isEditing" 
+            @click="enableApiKeyEdit" 
+            class="edit-button"
+            title="Edit API Key"
+          >
+            <span class="edit-icon">✎</span>
+          </button>
+        </div>
       </div>
     </div>
     <div class="preview" :style="{ backgroundColor: wallpaperParams.isDarkMode ? '#323232' : '#e6e6e6' }">
@@ -427,11 +455,11 @@ onUnmounted(() => {
 .select-group {
   display: flex;
   flex-direction: row;
-  gap: 12px;
+  gap: 20px;
   align-items: center;
   width: 50%;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  flex-wrap: nowrap;
+  justify-content: space-between;
 }
 
 .input-group {
@@ -439,6 +467,21 @@ onUnmounted(() => {
   width: 100%;
   align-items: center;
   gap: 10px;
+  justify-content: space-between;
+}
+
+.left-inputs {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.right-inputs {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
 }
 
 .input-label {
@@ -558,6 +601,30 @@ onUnmounted(() => {
 
 .font-select option:hover {
   background-color: #4a4a4a;
+}
+
+.api-select {
+  min-width: 140px;
+  padding: 8px 12px;
+  border: 1px solid #4a4a4a;
+  border-radius: 6px;
+  background-color: #424242;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  margin-left: 8px;
+}
+
+.api-select:hover {
+  border-color: #4a90e2;
+  background-color: #484848;
+}
+
+.api-select:focus {
+  outline: none;
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
 }
 
 .auto-delete-label {
@@ -771,7 +838,12 @@ onUnmounted(() => {
 }
 
 .fixed-width-input {
-  width: 200px !important;
+  width: 300px !important;
+  flex: none !important;
+}
+
+.api-key-input {
+  width: 180px !important;
   flex: none !important;
 }
 </style>

@@ -158,9 +158,9 @@ async function deleteTempFile(filePath) {
 
 function createWindow() {
   win = new BrowserWindow({
-    width: 1200,
+    width: 1500,
     height: 800,
-    minWidth: 1100,  // Set minimum window size
+    minWidth: 1500,  // Set minimum window size
     minHeight: 700,
     useContentSize: true,  // Use content size instead of window size
     icon: path.join(__dirname, '../public/images/logo.png'),
@@ -245,24 +245,36 @@ ipcMain.handle('interact-with-ai', async (event, userInput) => {
       };
     }
 
-    // Base prompt template - keeping it in English as per user requirements
-    const fullPrompt = `Find a famous Chinese poem that matches the following poet name or poem name or related poem: ${userInput}, and return the result in JSON format.
+    // Enhanced prompt template with strict authenticity requirements
+    const fullPrompt = `You are a scholarly Chinese poetry expert. Find ONLY authentic, well-documented Chinese poems that match: ${userInput}
 
-If a matching poem is found, return JSON in this structure:
-{"verse": "the two most iconic lines", "poem_name": "poem name", "author": "author"}
+SEARCH CRITERIA:
+- If input is a POET NAME: return any famous poem by that poet
+- If input is a POEM TITLE: return that specific poem
+- If input contains keywords: find poems with related themes or content
 
-If no matching poem is found or if the input is not a valid poet/poem name, return JSON in this structure:
-{"error": "brief error message explaining why no poem was found"}
+CRITICAL REQUIREMENTS:
+1. NEVER fabricate or create poems - only return real, historically documented Chinese poetry
+2. Only return poems from verified classical Chinese poets (Tang, Song, Yuan, Ming, Qing dynasties, or modern recognized poets)
+3. Ensure the verse, poem name, and author are all factually accurate
+4. If uncertain about authenticity, return an error instead of guessing
+5. Verify that the verse actually belongs to the specified poem and author
 
-Always return a valid JSON string, no additional text or explanation needed.`;
+If you find a verified authentic poem, return JSON in this structure:
+{"verse": "exact two lines from the authentic poem", "poem_name": "exact authentic poem title", "author": "verified poet name"}
+
+If no authentic poem can be confidently identified, return:
+{"error": "No verified poem found matching your search"}
+
+DO NOT return any poems unless you are completely certain of their authenticity. It is better to return an error than fabricated content.`;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: "You are a knowledgeable poetry assistant that always responds in valid JSON format." },
+        { role: "system", content: "You are a rigorous Chinese poetry scholar who NEVER fabricates content. You only provide verified, authentic Chinese poetry from documented historical sources. If uncertain about authenticity, always err on the side of caution and return an error. Always respond in valid JSON format." },
         { role: "user", content: fullPrompt }
       ],
-      temperature: 0.3, // Lower temperature for more factual responses
+      temperature: 0.1, // Lower temperature for more factual responses
       max_tokens: 150
     });
 

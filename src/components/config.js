@@ -6,6 +6,51 @@ export const INTERVAL_OPTIONS = [
   { label: 'Every month', value: 43200 },
 ]
 
+// Content API Configuration (Poetry, Quotes, etc.)
+// 
+// IMPORTANT: API Parameter Naming Conventions
+// Different APIs use different parameter naming conventions. Always refer to official documentation.
+export const CONTENT_API_CONFIG = {
+  jinrishici: {
+    baseUrl: 'https://v2.jinrishici.com',
+    endpoint: '/one.json',
+    clientId: 'npm-sdk/1.0',
+    tokenKey: 'jinrishici-token',
+    timeout: 5000,
+    withCredentials: true
+  },
+  // Hitokoto API Configuration
+  // Official docs: https://developer.hitokoto.cn/sentence/
+  // 
+  // CRITICAL: Parameter naming must match API specification exactly:
+  // - Use 'c' (NOT 'category') for content type
+  // - Use 'min_length' (NOT 'minLength') for minimum character count
+  // - Use 'max_length' (NOT 'maxLength') for maximum character count
+  // 
+  // Available Categories (c parameter):
+  // a=动画, b=漫画, c=游戏, d=文学, e=原创, f=来自网络, g=其他, h=影视, i=诗词, j=网易云, k=哲学, l=抖机灵
+  // For poetry content, use c=i (诗词)
+  hitokoto: {
+    baseUrl: 'https://v1.hitokoto.cn',
+    params: {
+      c: 'i',           // Category: 'i' for 诗词 (Poetry)
+      encode: 'json',   // Response format
+      min_length: 5,    // Minimum sentence length
+      max_length: 25    // Maximum sentence length 
+    },
+    timeout: 5000,
+    withCredentials: false
+  }
+};
+
+// API Selection Options for UI
+export const API_OPTIONS = [
+  { label: 'Jinrishici (今日诗词)', value: 'jinrishici' },
+  { label: 'Hitokoto (一言)', value: 'hitokoto' }
+];
+
+export const DEFAULT_API = 'jinrishici';
+
 // 可用字体选项
 export const FONT_OPTIONS = [
   { label: '江西拙楷', value: 'JXZhuoKai' },

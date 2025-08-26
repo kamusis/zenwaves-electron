@@ -16,41 +16,83 @@ limitations under the License.
 
 // 今日诗词 V2 NPM-SDK 1.0.0
 // 今日诗词API 是一个可以免费调用的诗词接口：https://www.jinrishici.com
-import { DEFAULT_POEM_ARRAY } from './config'
+import { DEFAULT_POEM_ARRAY, CONTENT_API_CONFIG } from './config'
 
-const keyName = 'jinrishici-token';
-
-const loadPoem = (callback) => {
+// Extract Jinrishici logic into dedicated function
+const loadFromJinrishici = (callback) => {
+  const config = CONTENT_API_CONFIG.jinrishici;
+  const keyName = config.tokenKey;
+  
   if (window.localStorage && window.localStorage.getItem(keyName)) {
-    return commonLoad(callback, window.localStorage.getItem(keyName));
+    return commonLoad(callback, window.localStorage.getItem(keyName), config);
   } else {
-    return corsLoad(callback);
+    return corsLoad(callback, config);
   }
 };
 
-const corsLoad = (callback) => {
+// Add Hitokoto API integration function
+const loadFromHitokoto = (callback, errorCallback) => {
+  const config = CONTENT_API_CONFIG.hitokoto;
+  const params = new URLSearchParams(config.params);
+  const apiUrl = `${config.baseUrl}?${params.toString()}`;
+  
+  fetch(apiUrl)
+    .then(response => response.json())
+    .then(hitokoto => {
+      // Transform Hitokoto response to ZenWaves format
+      const zenWavesFormat = {
+        status: "success",
+        data: {
+          content: hitokoto.hitokoto,
+          origin: {
+            author: hitokoto.from_who || "佚名",
+            title: hitokoto.from || "未知作品"
+          }
+        },
+        source: "hitokoto"
+      };
+      callback(zenWavesFormat);
+    })
+    .catch(error => {
+      console.error('Hitokoto API failed:', error);
+      if (errorCallback) errorCallback(error);
+    });
+};
+
+// Enhanced main function with API selection and fallback
+const loadPoem = (callback, options = {}) => {
+  const { apiSource = 'jinrishici' } = options;
+  
+  if (apiSource === 'hitokoto') {
+    loadFromHitokoto(callback, () => {
+      // Fallback to Jinrishici if Hitokoto fails
+      console.warn('Hitokoto API failed, falling back to Jinrishici');
+      loadFromJinrishici(callback);
+    });
+  } else {
+    // Default Jinrishici behavior
+    loadFromJinrishici(callback);
+  }
+};
+
+const corsLoad = (callback, config) => {
   const newCallBack = function (result) {
-    window.localStorage.setItem(keyName, result.token);
+    window.localStorage.setItem(config.tokenKey, result.token);
     callback(result);
   };
-  return sendRequest(
-    newCallBack,
-    'https://v2.jinrishici.com/one.json?client=npm-sdk/1.0'
-  );
+  const apiUrl = `${config.baseUrl}${config.endpoint}?client=${config.clientId}`;
+  return sendRequest(newCallBack, apiUrl, config);
 };
 
-const commonLoad = (callback, token) => {
-  return sendRequest(
-    callback,
-    'https://v2.jinrishici.com/one.json?client=npm-sdk/1.0&X-User-Token=' +
-      encodeURIComponent(token)
-  );
+const commonLoad = (callback, token, config) => {
+  const apiUrl = `${config.baseUrl}${config.endpoint}?client=${config.clientId}&X-User-Token=${encodeURIComponent(token)}`;
+  return sendRequest(callback, apiUrl, config);
 };
 
-const sendRequest = (callback, apiUrl) => {
+const sendRequest = (callback, apiUrl, config) => {
   const xhr = new XMLHttpRequest();
   xhr.open('get', apiUrl);
-  xhr.withCredentials = true;
+  xhr.withCredentials = config.withCredentials;
   xhr.send();
   xhr.onreadystatechange = function () {
     if (xhr.readyState === 4) {

@@ -1,33 +1,41 @@
 declare module './loadPoem.js' {
   interface PoemOrigin {
     title: string;
-    dynasty: string;
+    dynasty?: string;
     author: string;
-    content: string[];
-    translate: string[] | null;
+    content?: string[];
+    translate?: string[] | null;
   }
 
   interface PoemData {
-    id: string;
+    id?: string;
     content: string;
-    popularity: number;
+    popularity?: number;
     origin: PoemOrigin;
-    matchTags: string[];
-    recommendedReason: string;
-    cacheAt: string;
+    matchTags?: string[];
+    recommendedReason?: string;
+    cacheAt?: string;
   }
 
   interface PoemResult {
-    status?: string;
+    status: 'success' | 'error';
     data: {
       content: string;
       origin: {
         title: string;
         author: string;
-      }
+      };
     };
+    source?: 'jinrishici' | 'hitokoto' | 'local';
     token?: string;
   }
 
-  export default function loadPoem(callback: (result: PoemResult) => void): void;
+  interface LoadPoemOptions {
+    apiSource?: 'jinrishici' | 'hitokoto';
+  }
+
+  export default function loadPoem(
+    callback: (result: PoemResult) => void,
+    options?: LoadPoemOptions
+  ): void;
 }
